@@ -225,14 +225,18 @@ void KMCDetectorFwd::ReadSetup(const char* setup, const char* materials)
   //  if ( (narg=inp->FindEntry("define","magfield","d|",1,1))>0 ) fMagFieldID = inp->GetArgD(0);
   if ( (narg=inp->FindEntry("define","magfield","d?f?f?f?f?f?f?f?f",1,1))>0 ) fMagFieldID = inp->GetArgD(0);
   printf("Magnetic Field: %d\n",fMagFieldID);
+  int nreg = 0;
   Double_t zminDipole  = narg > 1 ? inp->GetArgF(1) : -9999;  
   Double_t zmaxDipole  = narg > 2 ? inp->GetArgF(2) : -9999;  
-  Double_t dipoleField = narg > 3 ? inp->GetArgF(3) : -9999;  
+  Double_t dipoleField = narg > 3 ? inp->GetArgF(3) : -9999;
+  if (narg>3) nreg = 1;
+  // this part is relevant for exra mag field, e.g. MS toroid
   Double_t zminToroid  = narg > 4 ? inp->GetArgF(4) : -9999;  
   Double_t zmaxToroid  = narg > 5 ? inp->GetArgF(5) : -9999;  
   Double_t toroidField = narg > 6 ? inp->GetArgF(6) : -9999;  
   Double_t toroidRmin  = narg > 7 ? inp->GetArgF(7) : -9999;  
-  Double_t toroidRmax  = narg > 8 ? inp->GetArgF(8) : -9999;  
+  Double_t toroidRmax  = narg > 8 ? inp->GetArgF(8) : -9999;
+  if (narg>8) nreg = 2;
   // end modification
   // -------------------------------------------------------------------
   //
@@ -327,20 +331,24 @@ void KMCDetectorFwd::ReadSetup(const char* setup, const char* materials)
   // init mag field
   if (TGeoGlobalMagField::Instance()->GetField()) printf("Magnetic Field is already initialized\n");
   else {
-    TVirtualMagField* fld = 0;
+    MagField* fld = 0;
     // -------------------------------------------------------------------
     // modified (adf 07/02/2019) to read magnets geometry and field from setup, 
     // with optional data  
     fld = new MagField(TMath::Abs(fMagFieldID));
-    if (zminDipole>-9999) ((MagField *) fld)->SetZMin(0,zminDipole);
-    if (zmaxDipole>-9999) ((MagField *) fld)->SetZMax(0,zmaxDipole);
-    if (zminToroid>-9999) ((MagField *) fld)->SetZMin(1,zminToroid);
-    if (zmaxToroid>-9999) ((MagField *) fld)->SetZMax(1,zmaxToroid);
-    if (dipoleField>-9999) ((MagField *) fld)->SetBVals(0,0,dipoleField);
-    if (toroidField>-9999) ((MagField *) fld)->SetBVals(1,0,toroidField);
-    if (toroidRmin>-9999) ((MagField *) fld)->SetBVals(1,1,toroidRmin);
-    if (toroidRmax>-9999) ((MagField *) fld)->SetBVals(1,2,toroidRmax);
-    // end modification
+    if (nreg>0) {
+      fld->SetNReg(nreg);
+      if (zminDipole>-9999) ((MagField *) fld)->SetZMin(0,zminDipole);
+      if (zmaxDipole>-9999) ((MagField *) fld)->SetZMax(0,zmaxDipole);
+      if (zminToroid>-9999) ((MagField *) fld)->SetZMin(1,zminToroid);
+      if (dipoleField>-9999) ((MagField *) fld)->SetBVals(0,0,dipoleField);
+    }
+    if (nreg>1) {
+      if (zmaxToroid>-9999) ((MagField *) fld)->SetZMax(1,zmaxToroid);
+      if (toroidField>-9999) ((MagField *) fld)->SetBVals(1,0,toroidField);
+      if (toroidRmin>-9999) ((MagField *) fld)->SetBVals(1,1,toroidRmin);
+      if (toroidRmax>-9999) ((MagField *) fld)->SetBVals(1,2,toroidRmax);
+    }
     // -------------------------------------------------------------------
     TGeoGlobalMagField::Instance()->SetField( fld );
     TGeoGlobalMagField::Instance()->Lock();
@@ -539,7 +547,7 @@ KMCProbeFwd* KMCDetectorFwd::PrepareProbe(double pt, double yrap, double phi, do
 //____________________________________________________________________________
 Int_t KMCDetectorFwd::GetFieldReg(double z) 
 {
-  // field region *2
+  // return field region * 2 + 1
   int ir = 0;
   for (int i=0;i<fFldNReg;i++) {
     if (z<=fFldZMins[i]) return ir;
@@ -563,7 +571,7 @@ Bool_t KMCDetectorFwd::PropagateToZBxByBz(KMCProbeFwd* trc,double z,double maxDZ
   int ib0 = GetFieldReg(curZ); // field region id of start point
   int ib1 = GetFieldReg(z);    // field region id of last point
   int nzst = 0;
-  AliInfo(Form("FldRegID: %d %d (%f : %f)",ib0,ib1, curZ,z));
+  //  AliInfo(Form("FldRegID: %d %d (%f : %f)",ib0,ib1, curZ,z));
   if (ib1>ib0) { // fwd propagation with field boundaries crossing
     for (int ib=ib0;ib<ib1;ib++) {
       if ( ib&0x1 ) { // we are in the odd (field ON) region, go till the end of field reg.

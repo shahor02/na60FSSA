@@ -1,16 +1,40 @@
 #ifndef TTREESTREAM_H
 #define TTREESTREAM_H
-///////////////////////////////////////////////////////////////////////////////
-//                                                                           //
-//  TTreeSRedirector                                                              //                      
+/**************************************************************************
+ * Copyright(c) 1998-1999, ALICE Experiment at CERN, All rights reserved. *
+ *                                                                        *
+ * Author: The ALICE Off-line Project.                                    *
+ * Contributors are mentioned in the code where appropriate.              *
+ *                                                                        *
+ * Permission to use, copy, modify and distribute this software and its   *
+ * documentation strictly for non-commercial purposes is hereby granted   *
+ * without fee, provided that the above copyright notice appears in all   *
+ * copies and that both the copyright notice and this permission notice   *
+ * appear in the supporting documentation. The authors make no claims     *
+ * about the suitability of this software for any purpose. It is          *
+ * provided "as is" without express or implied warranty.                  *
+ **************************************************************************/
 
-#include "TObject.h"
-#include "TString.h"
-#include "TTree.h"
-#include "TDirectory.h"
-#include "TFile.h"
+//  marian.ivanov@cern.ch
+//
+//  ------------------------------------------------------------------------------------------------
+//  TTreeStream
+//  Standard stream (cout) like input for the tree
+//  Run and see TTreeStreamer::Test() - to see TTreeStreamer functionality
+//  ------------------------------------------------------------------------------------------------  
+//
+//  -------------------------------------------------------------------------------------------------
+//  TTreeSRedirector
+//  Redirect file to  different TTreeStreams  
+//  Run and see   TTreeSRedirector::Test() as an example of TTreeSRedirector functionality
+// 
+
+#include <TObject.h>
+#include <TString.h>
+#include <TTree.h>
+#include <TDirectory.h>
+#include <TFile.h>
 class TObjArray;
-class TTree;
 class TDataType;
 
 class TTreeDataElement: public TNamed {
