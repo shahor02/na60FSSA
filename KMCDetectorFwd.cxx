@@ -341,7 +341,7 @@ void KMCDetectorFwd::ReadSetup(const char* setup, const char* materials)
       if (zminDipole>-9999) ((MagField *) fld)->SetZMin(0,zminDipole);
       if (zmaxDipole>-9999) ((MagField *) fld)->SetZMax(0,zmaxDipole);
       if (zminToroid>-9999) ((MagField *) fld)->SetZMin(1,zminToroid);
-      if (dipoleField>-9999) ((MagField *) fld)->SetBVals(0,0,dipoleField);
+      if (dipoleField>-9999) ((MagField *) fld)->SetBVals(0,1,dipoleField);
     }
     if (nreg>1) {
       if (zmaxToroid>-9999) ((MagField *) fld)->SetZMax(1,zmaxToroid);
@@ -827,7 +827,7 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
   // At this point, the fProbe contains the track params generated at vertex.
   // Clone it and propagate to target layer to generate hit positions affected by MS
   //
-  const float kErrScale = 100.; // RS: this is the parameter defining the initial cov.matrix error wrt sensor resolution
+  const float kErrScale = 500.; // RS: this is the parameter defining the initial cov.matrix error wrt sensor resolution
       
   Bool_t checkMS = kTRUE;
   fMuTrackVertex.SetUniqueID(999); // invalidate
@@ -1021,6 +1021,7 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
     //
     for (int itr=ntTot;itr--;) {
       currTr = lr->GetMCTrack(itr);
+      if (currTr->IsKilled()) continue;
       if (!PropagateToLayer(currTr,lrP,lr,-1))  {currTr->Kill();continue;} // propagate to current layer
     }
     AliDebug(1,Form("Got %d tracks on layer %s",ntTot,lr->GetName()));
@@ -1030,7 +1031,6 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
   //
   // do we use vertex constraint?
   if (fVtx && !fVtx->IsDead() && fIncludeVertex) {
-    printf("Apply vertex constraint\n");
     int ntr = fVtx->GetNMCTracks();
     for (int itr=0;itr<ntr;itr++) {
       currTr = fVtx->GetMCTrack(itr);
