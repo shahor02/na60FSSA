@@ -1,7 +1,7 @@
 # for C++ define  CC = g++
 CC = g++
 CFLAGS = -g -O0 -Wall -fPIC -m64 -std=gnu++17
-LFLAGS = -L$(ROOTSYS)/lib  -lCore -lRint -lTree
+LFLAGS = $(shell root-config --glibs) -lEG -lGeom
 INC =	-I$(ROOTSYS)/include -I/usr/include  -I./
 TGT =	libKMCDetFwd.so
 DICT=	KMCDetFwdDict.cxx
@@ -20,7 +20,7 @@ all: 	$(TGT)
 	@echo creating libKMCDetFwd.so
 
 $(TGT):	$(OBJ) $(DICTO)
-	$(CC) $(CFLAGS)  -shared -o $(TGT) $(OBJ) $(DICTO) `root-config --ldflags` $(LFLAGS)
+	$(CC) $(CFLAGS)  -shared -o $(TGT) $(OBJ) $(DICTO) $(shell root-config --ldflags) $(LFLAGS)
 
 # pull in dependency info for *existing* .o files
 -include $(OBJ:.o=.d)
