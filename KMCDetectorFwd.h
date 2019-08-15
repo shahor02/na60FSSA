@@ -124,9 +124,12 @@ class KMCDetectorFwd : public TNamed {
 
   void         ImposeVertex(float x=0.,float y=0., float z=0.) {
     fImposeVertexPosition = kTRUE;
-    fRefVtx[0] = y; // assign in tracking frame
-    fRefVtx[1] = z;
-    fRefVtx[2] = x;
+    double tmpLab[3];
+    tmpLab[0] = x;
+    tmpLab[1] = y;
+    tmpLab[2] = z;
+    // assign in tracking frame
+    KMCProbeFwd::Lab2Trk(tmpLab, fRefVtx);
   }
   void         UseTrackOriginAsVertex() {
     fImposeVertexPosition = kFALSE;
@@ -242,7 +245,7 @@ class KMCDetectorFwd : public TNamed {
   Double_t  fDefStepAir;    // default step size in air
   Double_t  fDefStepMat;    // default step size in material
   Double_t  fGenPnt[3];     // particle generation point
-  Double_t  fRefVtx[3];     // reference vertex
+  Double_t  fRefVtx[3];     // reference vertex (as all constraints, stored in tracking frame)
   Bool_t fImposeVertexPosition; // impose vertex position externally
   //
   TArrayI  fPattITS;                     // bit pattern of each group of active layers where hit is required

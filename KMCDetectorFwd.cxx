@@ -742,7 +742,7 @@ Bool_t KMCDetectorFwd::UpdateTrack(KMCProbeFwd* trc, const KMCLayerFwd* lr, cons
   double meas[2] = {cl->GetY(),cl->GetZ()}; // ideal cluster coordinate, tracking (AliExtTrParam frame)
   double rcl = TMath::Sqrt(cl->GetY()*cl->GetY()+cl->GetZ()*cl->GetZ());
   double sgY = lr->GetYRes(rcl), sgX = lr->GetXRes(rcl);
-  double measErr2[3] = {sgY*sgY,0,sgX*sgX}; // !!! Ylab<->Ytracking, Xlab<->Ztracking
+  double measErr2[3] = {sgY*sgY,0,sgX*sgX}; // !!! Lab 
   //
   double chi2 = trc->GetTrack()->GetPredictedChi2(meas,measErr2);
   //    printf("Update for lr:%s -> chi2=%f\n",lr->GetName(), chi2);
@@ -843,10 +843,9 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
   if (fExternalInput) maxLr = fLastActiveLayerTracked;
   if (maxLr<0) return kFALSE;
   if (fVtx && !fImposeVertexPosition) {
-    fVtx->GetMCCluster()->Set(fProbe.GetTrack()->GetX(),fProbe.GetTrack()->GetY(),fProbe.GetTrack()->GetZ());
-    fRefVtx[0] = fProbe.GetTrack()->GetY();
-    fRefVtx[1] = fProbe.GetTrack()->GetZ();
-    fRefVtx[2] = fProbe.GetTrack()->GetX();
+    double tmpLab[3] = {fProbe.GetX(),fProbe.GetY(),fProbe.GetZ()};
+    KMCProbeFwd::Lab2Trk(tmpLab, fRefVtx); // assign in tracking frame
+    fVtx->GetMCCluster()->Set(fRefVtx[0],fRefVtx[1],fRefVtx[2]);
   }
   //
   //printf("MaxLr: %d\n",maxLr);
@@ -949,7 +948,7 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
 	if (!PropagateToLayer(&trcConstr,lrP,fVtx,-1))  {currTrP->Kill();continue;} // propagate to vertex
 	//////	trcConstr.ResetCovariance();
 	// update with vertex point + eventual additional error
-	float origErrX = fVtx->GetYRes(), origErrY = fVtx->GetXRes(); // !!! Ylab<->Ytracking, Xlab<->Ztracking
+	float origErrX = fVtx->GetYRes(), origErrY = fVtx->GetXRes(); 
 	KMCClusterFwd* clv = fVtx->GetMCCluster();
 	double measCV[2] = {clv->GetY(),clv->GetZ()}, errCV[3] = {
 	  origErrX*origErrX+fApplyBransonPCorrection*fApplyBransonPCorrection,
@@ -1037,15 +1036,15 @@ Bool_t KMCDetectorFwd::SolveSingleTrackViaKalmanMC(int offset)
       if (currTr->IsKilled()) continue;
       double meas[2] = {0.,0.};
       if (fImposeVertexPosition) {
-	meas[0] = fRefVtx[0];
-	meas[1] = fRefVtx[1];	
+	meas[0] = fRefVtx[1]; // bending
+	meas[1] = fRefVtx[2]; // non-bending
       }
       else {
 	KMCClusterFwd* clv = fVtx->GetMCCluster();
-	meas[0] = clv->GetY();
+	meas[0] = clv->GetY(); 
 	meas[1] = clv->GetZ();
       }
-      double measErr2[3] = {fVtx->GetYRes()*fVtx->GetYRes(),0,fVtx->GetXRes()*fVtx->GetXRes()}; //  Ylab<->Ytracking, Xlab<->Ztracking
+      double measErr2[3] = {fVtx->GetYRes()*fVtx->GetYRes(),0,fVtx->GetXRes()*fVtx->GetXRes()}; //  Lab
       //    double chi2v = currTr->GetPredictedChi2(meas,measErr2);
       if (!currTr->Update(meas,measErr2)) continue;
       //currTr->AddHit(fVtx->GetActiveID(), chi2v, -1);
@@ -1133,10 +1132,10 @@ void KMCDetectorFwd::CheckTrackProlongations(KMCProbeFwd *probe, KMCLayerFwd* lr
   int nCl = lrP->GetNBgClusters();
   double rad = probe->GetR();
   double sgy = lrP->GetYRes(rad), sgx = lrP->GetXRes(rad); 
-  double measErr2[3] = { sgy*sgy, 0, sgx*sgx}; // we work in tracking frame here!
+  double measErr2[3] = { sgx*sgx, 0, sgy*sgy}; // we work in tracking frame here!
   double meas[2] = {0,0};
-  double tolerY = probe->GetTrack()->GetSigmaY2() + measErr2[0];
-  double tolerZ = probe->GetTrack()->GetSigmaZ2() + measErr2[2];
+  double tolerY = probe->GetSigmaX2() + measErr2[0];
+  double tolerZ = probe->GetSigmaY2() + measErr2[2];
   tolerY = TMath::Sqrt(fMaxChi2Cl*tolerY);
   tolerZ = TMath::Sqrt(fMaxChi2Cl*tolerZ);
   double yMin = probe->GetTrack()->GetY() - tolerY;
@@ -1156,8 +1155,8 @@ void KMCDetectorFwd::CheckTrackProlongations(KMCProbeFwd *probe, KMCLayerFwd* lr
       if (AliLog::GetGlobalDebugLevel()>1) {printf("Skip cluster %d ",icl); cl->Print();}
       continue;
     }
-    double y = cl->GetY(); // ! tracking frame coordinates: Ylab
-    double z = cl->GetZ(); //                              -XLab, sorted in decreasing order
+    double y = cl->GetY(); // ! tracking frame coordinates
+    double z = cl->GetZ(); //                             
     //
     AliDebug(2,Form("Check against cl#%d(%d) out of %d at layer %s | y: Tr:%+8.4f Cl:%+8.4f (%+8.4f:%+8.4f) z: Tr:%+8.4f Cl: %+8.4f (%+8.4f:%+8.4f)",
     		    icl,cl->GetTrID(),nCl,lrP->GetName(), probe->GetTrack()->GetY(),y,yMin,yMax,probe->GetTrack()->GetZ(),z,zMin,zMax));
@@ -1199,7 +1198,7 @@ void KMCDetectorFwd::CheckTrackProlongations(KMCProbeFwd *probe, KMCLayerFwd* lr
 
     //////////////////// check chi2 to vertex
     if (fVtx && !fVtx->IsDead() && fMaxChi2Vtx>0) {
-      double measVErr2[3] = {fVtx->GetYRes()*fVtx->GetYRes(),0,fVtx->GetXRes()*fVtx->GetXRes()}; // we work in tracking frame here!
+      double measVErr2[3] = {fVtx->GetXRes()*fVtx->GetXRes(),0,fVtx->GetYRes()*fVtx->GetYRes()}; // we work in tracking frame here!
       propVtx = *newTr;
 
       if (!PropagateToZBxByBz(&propVtx,fRefVtx[2],fDefStepAir)) {/*printf("???????? Kill\n");*/ newTr->Kill(); lr->GetMCTracks()->RemoveLast();}

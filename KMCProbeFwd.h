@@ -72,14 +72,14 @@ class KMCProbeFwd: public TObject {
   Bool_t   Update(Double_t cov[3]);
 
   Double_t GetR()                        const {double x=GetX(),y=GetY(),r=x*x+y*y; return r>0?TMath::Sqrt(r):0;}
-  Double_t GetX()                        const {return -fTrack.GetZ();} // Z of local frame!
-  Double_t GetY()                        const {return  fTrack.GetY();} // Y of local frame
+  Double_t GetX()                        const {return  fTrack.GetY();}
+  Double_t GetY()                        const {return  fTrack.GetZ();} // Y of local frame
   Double_t GetZ()                        const {return NegDir() ? -fTrack.GetX():fTrack.GetX();}
   void     GetXYZ(double *xyz)           const;
   void     GetPXYZ(double *pxyz)         const;  
   double   GetP()                        const {return fTrack.GetP();}
-  Double_t GetSigmaX2()                  const {return fTrack.GetSigmaZ2();}
-  Double_t GetSigmaY2()                  const {return fTrack.GetSigmaY2();}
+  Double_t GetSigmaX2()                  const {return fTrack.GetSigmaY2();}
+  Double_t GetSigmaY2()                  const {return fTrack.GetSigmaZ2();}
   Double_t GetSigmaXY()                  const {return fTrack.GetSigmaZY();}  
   Double_t GetSigmaP2()                  const;
   Double_t GetSigmaPX2()                 const;
@@ -131,7 +131,8 @@ class KMCProbeFwd: public TObject {
   static Double_t fgMissingHitPenalty;  //
   ClassDef(KMCProbeFwd,1)
 };
-
+/*
+// RS: swap adapted for the field along lab X axis
 //_______________________________________________________________________
 inline void  KMCProbeFwd::Lab2Trk(const double *vLab, double *vTrk)
 {
@@ -149,6 +150,27 @@ inline void  KMCProbeFwd::Trk2Lab(const double *vTrk, double *vLab)
   vLab[1] = vTrk[1];
   vLab[2] = vTrk[0];
 }
+*/
+
+// RS: swap adapted for the field along lab Y axis
+//_______________________________________________________________________
+inline void  KMCProbeFwd::Lab2Trk(const double *vLab, double *vTrk)
+{
+  // convert alice coordinates to modified
+  vTrk[0] = vLab[2];
+  vTrk[1] = vLab[0];
+  vTrk[2] = vLab[1];
+}
+
+//_______________________________________________________________________
+inline void  KMCProbeFwd::Trk2Lab(const double *vTrk, double *vLab)
+{
+  // convert modified coordinates to Lab ones
+  vLab[0] = vTrk[1];
+  vLab[1] = vTrk[2];
+  vLab[2] = vTrk[0];
+}
+
 
 //_______________________________________________________________________
 inline void KMCProbeFwd::GetXYZ(double *xyz) const
