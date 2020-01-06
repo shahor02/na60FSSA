@@ -138,6 +138,7 @@ class KMCDetectorFwd : public TNamed {
   //
   void Print(const Option_t* opt = "") const; 
   //
+  Int_t GetNumberOfLayers()          const {return fNLayers;}  
   Int_t GetNumberOfActiveLayers()    const {return fNActiveLayers;}  
   Int_t GetNumberOfActiveLayersITS() const {return fNActiveLayersITS;}
   Int_t GetNumberOfActiveLayersMS()  const {return fNActiveLayersMS;}
